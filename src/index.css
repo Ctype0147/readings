@@ -1,0 +1,111 @@
+@import 'tailwindcss';
+
+@layer base {
+  :root {
+    font-family:
+      Inter, Pretendard, 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    color: #17201c;
+    background: #f4f6f8;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    min-width: 320px;
+    min-height: 100vh;
+  }
+
+  button,
+  a {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+.sensor-card::after {
+  position: absolute;
+  top: -96px;
+  right: -84px;
+  width: 260px;
+  height: 260px;
+  border: 1px solid rgb(255 255 255 / 8%);
+  border-radius: 999px;
+  box-shadow:
+    0 0 0 36px rgb(255 255 255 / 2.5%),
+    0 0 0 76px rgb(255 255 255 / 1.5%);
+  content: '';
+}
+
+.sensor-value {
+  font-variant-numeric: tabular-nums;
+}
+
+.chart-scroll {
+  width: 100%;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #d9e2de transparent;
+}
+
+.chart {
+  display: block;
+  min-width: 620px;
+  width: 100%;
+  height: 270px;
+  overflow: visible;
+}
+
+.grid-line {
+  stroke: #e9eeeb;
+  stroke-width: 1;
+  stroke-dasharray: 3 5;
+  vector-effect: non-scaling-stroke;
+}
+
+.axis-label {
+  fill: #929c97;
+  font-family: inherit;
+  font-size: 11px;
+}
+
+.trend-line {
+  fill: none;
+  stroke: #2f7c66;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.trend-line-shadow {
+  stroke: rgb(47 124 102 / 10%);
+  stroke-width: 10;
+}
+
+.data-point-halo {
+  fill: #e3f1eb;
+  transition: r 160ms ease;
+}
+
+.data-point {
+  fill: #2f7c66;
+  stroke: #fff;
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+}
+
+@media (max-width: 640px) {
+  .chart {
+    height: 240px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
