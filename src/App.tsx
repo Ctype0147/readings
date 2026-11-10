@@ -1,20 +1,58 @@
-import { useEffect, useMemo, useState } from "react"
-import { supabase, supabaseConfigError } from "./supabase"
+import { useMemo, useState } from "react"
 
 type IconProps = {
   className?: string
 }
 
-interface Reading {
-  key: string
-  timestamp: number
-  time: string
-  value: number
-}
+const ranges = ["30분", "2시간", "24시간"] as const
+type Range = typeof ranges[number]
 
-interface TrendChartProps {
-  data: Reading[]
-  label: string
+const chartDatasets: Record<Range, { time: string value: number }[]> = {
+  "30분": [
+    { time: "10:30", value: 3.7 },
+    { time: "10:33", value: 3.8 },
+    { time: "10:35", value: 3.6 },
+    { time: "10:38", value: 3.9 },
+    { time: "10:40", value: 4.1 },
+    { time: "10:43", value: 4.0 },
+    { time: "10:45", value: 3.9 },
+    { time: "10:48", value: 3.7 },
+    { time: "10:50", value: 3.6 },
+    { time: "10:53", value: 3.7 },
+    { time: "10:55", value: 3.9 },
+    { time: "10:58", value: 3.8 },
+    { time: "11:00", value: 3.8 },
+  ],
+  "2시간": [
+    { time: "09:00", value: 1.2 },
+    { time: "09:10", value: 1.8 },
+    { time: "09:20", value: 1.5 },
+    { time: "09:30", value: 2.6 },
+    { time: "09:40", value: 2.2 },
+    { time: "09:50", value: 3.1 },
+    { time: "10:00", value: 2.8 },
+    { time: "10:10", value: 3.9 },
+    { time: "10:20", value: 4.4 },
+    { time: "10:30", value: 3.7 },
+    { time: "10:40", value: 4.1 },
+    { time: "10:50", value: 3.6 },
+    { time: "11:00", value: 3.8 },
+  ],
+  "24시간": [
+    { time: "11:00", value: 2.1 },
+    { time: "13:00", value: 2.4 },
+    { time: "15:00", value: 2.0 },
+    { time: "17:00", value: 2.7 },
+    { time: "19:00", value: 3.2 },
+    { time: "21:00", value: 2.9 },
+    { time: "23:00", value: 3.4 },
+    { time: "01:00", value: 3.0 },
+    { time: "03:00", value: 3.5 },
+    { time: "05:00", value: 4.2 },
+    { time: "07:00", value: 4.0 },
+    { time: "09:00", value: 3.6 },
+    { time: "11:00", value: 3.8 },
+  ],
 }
 
 function TiltIcon({ className = "size-5" }: IconProps) {
@@ -71,6 +109,33 @@ function ActivityIcon({ className = "size-5" }: IconProps) {
   )
 }
 
+function PauseIcon({ className = "size-4" }: IconProps) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      aria-hidden="true"
+    >
+      <rect x="6.5" y="5" width="3.5" height="14" rx="1" />
+      <rect x="14" y="5" width="3.5" height="14" rx="1" />
+    </svg>
+  )
+}
+
+function PlayIcon({ className = "size-4" }: IconProps) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      aria-hidden="true"
+    >
+      <path d="M7.5 5.6a1.2 1.2 0 0 1 1.85-1L18 11a1.2 1.2 0 0 1 0 2l-8.65 6.4a1.2 1.2 0 0 1-1.85-1V5.6Z" />
+    </svg>
+  )
+}
+
 function MoreIcon({ className = "size-5" }: IconProps) {
   return (
     <svg
@@ -86,52 +151,40 @@ function MoreIcon({ className = "size-5" }: IconProps) {
   )
 }
 
-function TrendChart({ data, label }: TrendChartProps) {
+function TrendChart({
+  data,
+  range,
+}: {
+  data: typeof chartDatasets[Range]
+  range: Range
+}) {
   const width = 900
   const height = 300
   const padding = { left: 42, right: 20, top: 20, bottom: 40 }
-  const yMin = Math.min(
-    0,
-    Math.floor(Math.min(...data.map(({ value }) => value)) / 2) * 2,
-  )
-  const yMax = Math.max(
-    6,
-    Math.ceil(Math.max(...data.map(({ value }) => value)) / 2) * 2,
-  )
-  const yRange = yMax - yMin
+  const yMax = 6
   const plotWidth = width - padding.left - padding.right
   const plotHeight = height - padding.top - padding.bottom
   const points = data.map((item, index) => ({
     ...item,
-    x:
-      padding.left +
-      (data.length === 1 ? 0.5 : index / (data.length - 1)) * plotWidth,
-    y: padding.top + plotHeight - ((item.value - yMin) / yRange) * plotHeight,
+    x: padding.left + (index / (data.length - 1)) * plotWidth,
+    y: padding.top + plotHeight - (item.value / yMax) * plotHeight,
   }))
   const line = points.map((point) => `${point.x},${point.y}`).join(" ")
-  const labelIndexes = Array.from(
-    { length: Math.min(5, data.length) },
-    (_, index) =>
-      Math.round(
-        (index * (data.length - 1)) / (Math.min(5, data.length) - 1 || 1),
-      ),
-  )
 
   return (
-    <div className="chart-scroll" aria-label={`${label} 기울기 변화 선 그래프`}>
+    <div
+      className="chart-scroll"
+      aria-label={`최근 ${range}의 기울기 변화 선 그래프`}
+    >
       <svg
         viewBox={`0 0 ${width} ${height}`}
         role="img"
         className="chart"
         preserveAspectRatio="none"
       >
-        <title>{`${label} 기울기 변화: ${data[0].value}도에서 ${data.at(-1)?.value}도로 변화`}</title>
-        {Array.from(
-          { length: 4 },
-          (_, index) => yMin + (index * yRange) / 3,
-        ).map((tick) => {
-          const y =
-            padding.top + plotHeight - ((tick - yMin) / yRange) * plotHeight
+        <title>{`최근 ${range} 기울기 변화: ${data[0].value}도에서 ${data.at(-1)?.value}도로 변화`}</title>
+        {[0, 2, 4, 6].map((tick) => {
+          const y = padding.top + plotHeight - (tick / yMax) * plotHeight
           return (
             <g key={tick}>
               <line
@@ -147,23 +200,17 @@ function TrendChart({ data, label }: TrendChartProps) {
                 textAnchor="end"
                 className="axis-label"
               >
-                {tick.toFixed(tick % 1 ? 1 : 0)}°
+                {tick}°
               </text>
             </g>
           )
         })}
-        {labelIndexes.map((index) => (
+        {[0, 3, 6, 9, 12].map((index) => (
           <text
-            key={index}
+            key={`${data[index].time}-${index}`}
             x={points[index].x}
             y={height - 10}
-            textAnchor={
-              index === 0
-                ? "start"
-                : index === data.length - 1
-                  ? "end"
-                  : "middle"
-            }
+            textAnchor={index === 0 ? "start" : index === 12 ? "end" : "middle"}
             className="axis-label"
           >
             {data[index].time}
@@ -172,7 +219,7 @@ function TrendChart({ data, label }: TrendChartProps) {
         <polyline points={line} className="trend-line trend-line-shadow" />
         <polyline points={line} className="trend-line" />
         {points.map((point, index) => (
-          <g key={`${point.time}-${index}`}>
+          <g key={point.time}>
             <circle
               cx={point.x}
               cy={point.y}
@@ -194,57 +241,16 @@ function TrendChart({ data, label }: TrendChartProps) {
   )
 }
 
-function parseReading(row: unknown): Reading | null {
-  if (typeof row !== "object" || row === null) return null
-
-  const record = row as Record<string, unknown>
-  const value =
-    typeof record.value === "number"
-      ? record.value
-      : typeof record.value === "string" && record.value.trim()
-        ? Number(record.value)
-        : Number.NaN
-  const createdAt =
-    typeof record.created_at === "string" ? record.created_at : ""
-  const timestamp = Date.parse(createdAt)
-  if (!Number.isFinite(value) || !Number.isFinite(timestamp)) return null
-
-  return {
-    key: `${createdAt}:${value}`,
-    timestamp,
-    time: new Date(timestamp).toLocaleTimeString("ko-KR", {
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      hour12: false,
-    }),
-    value,
-  }
-}
-
-function mergeReadings(...groups: Reading[][]): Reading[] {
-  const unique = new Map<string, Reading>()
-  for (const reading of groups.flat()) unique.set(reading.key, reading)
-  return [...unique.values()]
-    .sort((left, right) => left.timestamp - right.timestamp)
-    .slice(-100)
-}
-
 export default function App() {
-  const [readings, setReadings] = useState<Reading[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [realtimeStatus, setRealtimeStatus] =
-    useState<"connecting" | "connected" | "disconnected">("connecting")
-  const [errorMessage, setErrorMessage] = useState("")
-  const latestReading = readings.at(-1)
-  const previousReading = readings.at(-2)
-  const currentChange =
-    latestReading && previousReading
-      ? latestReading.value - previousReading.value
-      : null
+  const [range, setRange] = useState<Range>("2시간")
+  const [isLive, setIsLive] = useState(true)
+  const updatedLabel = useMemo(
+    () => (isLive ? "방금 전 업데이트" : "업데이트 일시정지됨"),
+    [isLive],
+  )
+  const activeData = chartDatasets[range]
   const stats = useMemo(() => {
-    const values = readings.map(({ value }) => value)
-    if (!values.length) return null
+    const values = activeData.map(({ value }) => value)
     return {
       average: (
         values.reduce((sum, value) => sum + value, 0) / values.length
@@ -252,92 +258,7 @@ export default function App() {
       minimum: Math.min(...values).toFixed(1),
       maximum: Math.max(...values).toFixed(1),
     }
-  }, [readings])
-
-  useEffect(() => {
-    const client = supabase
-    if (!client) {
-      setRealtimeStatus("disconnected")
-      setErrorMessage(supabaseConfigError)
-      setIsLoading(false)
-      return
-    }
-
-    let active = true
-    let initialLoadComplete = false
-    let pendingRealtimeReadings: Reading[] = []
-
-    const channel = client
-      .channel("dashboard-readings")
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "readings" },
-        (payload) => {
-          const reading = parseReading(payload.new)
-          if (!reading) {
-            if (active) {
-              setErrorMessage(
-                "readings 행의 value 또는 created_at 값이 올바르지 않습니다.",
-              )
-            }
-            return
-          }
-          if (!initialLoadComplete) {
-            pendingRealtimeReadings.push(reading)
-            return
-          }
-          if (active)
-            setReadings((current) => mergeReadings(current, [reading]))
-        },
-      )
-      .subscribe((status, error) => {
-        if (!active) return
-        if (status === "SUBSCRIBED") {
-          setRealtimeStatus("connected")
-        } else if (
-          status === "CHANNEL_ERROR" ||
-          status === "TIMED_OUT" ||
-          status === "CLOSED"
-        ) {
-          setRealtimeStatus("disconnected")
-          setErrorMessage(
-            `Supabase Realtime 연결 오류: ${error?.message ?? status}`,
-          )
-        }
-      })
-
-    async function loadLatestReadings(client: NonNullable<typeof supabase>) {
-      const { data, error } = await client
-        .from("readings")
-        .select("value, created_at")
-        .order("created_at", { ascending: false })
-        .limit(100)
-
-      if (!active) return
-      if (error) {
-        setErrorMessage(`최신 측정값 조회 실패: ${error.message}`)
-      } else {
-        const rows = (data ?? [])
-          .map(parseReading)
-          .filter((reading): reading is Reading => reading !== null)
-        setReadings(mergeReadings(rows, pendingRealtimeReadings))
-        if (rows.length !== (data?.length ?? 0)) {
-          setErrorMessage(
-            "일부 readings 행의 value 또는 created_at 값을 읽을 수 없습니다.",
-          )
-        }
-      }
-      initialLoadComplete = true
-      pendingRealtimeReadings = []
-      setIsLoading(false)
-    }
-
-    void loadLatestReadings(client)
-    return () => {
-      active = false
-      void client.removeChannel(channel)
-    }
-  }, [])
+  }, [activeData])
 
   return (
     <div className="min-h-screen bg-[#f4f6f8] text-[#17201c]">
@@ -356,13 +277,20 @@ export default function App() {
             </span>
           </a>
           <div className="flex items-center gap-3">
-            <span className="text-[13px] text-[#738079]">
-              {realtimeStatus === "connected"
-                ? "Realtime 연결됨"
-                : realtimeStatus === "connecting"
-                  ? "Realtime 연결 중"
-                  : "Realtime 연결 끊김"}
+            <span className="hidden text-[13px] text-[#738079] sm:inline">
+              {updatedLabel}
             </span>
+            <button
+              type="button"
+              onClick={() => setIsLive((current) => !current)}
+              className="flex h-9 items-center gap-2 rounded-lg border border-[#d9e0dc] bg-white px-3 text-[13px] font-semibold text-[#405048] transition hover:border-[#aebdb5] hover:bg-[#f8faf9] focus:outline-none focus:ring-2 focus:ring-[#2b7561]/30"
+              aria-label={
+                isLive ? "센서 업데이트 일시정지" : "센서 업데이트 다시 시작"
+              }
+            >
+              {isLive ? <PauseIcon /> : <PlayIcon />}
+              <span>{isLive ? "일시정지" : "다시 시작"}</span>
+            </button>
           </div>
         </div>
       </header>
@@ -380,36 +308,15 @@ export default function App() {
               설비의 현재 기울기와 시간대별 변화를 모니터링합니다.
             </p>
           </div>
-          <div
-            className={`flex w-fit items-center gap-2 rounded-full border px-3 py-1.5 text-[12px] font-semibold ${
-              realtimeStatus === "connected"
-                ? "border-[#cfe0d8] bg-[#edf7f2] text-[#28634f]"
-                : "border-[#e1e6e3] bg-white text-[#738079]"
-            }`}
-          >
+          <div className="flex w-fit items-center gap-2 rounded-full border border-[#cfe0d8] bg-[#edf7f2] px-3 py-1.5 text-[12px] font-semibold text-[#28634f]">
             <span
               className={`size-2 rounded-full ${
-                realtimeStatus === "connected"
-                  ? "animate-pulse bg-[#36a879]"
-                  : "bg-[#93a19a]"
+                isLive ? "animate-pulse bg-[#36a879]" : "bg-[#93a19a]"
               }`}
             />
-            {realtimeStatus === "connected"
-              ? "실시간 수신 중"
-              : realtimeStatus === "connecting"
-                ? "Supabase 연결 중"
-                : "Supabase 연결 확인 필요"}
+            {isLive ? "정상 수신 중" : "수신 일시정지"}
           </div>
         </section>
-
-        {errorMessage && (
-          <p
-            role="alert"
-            className="mb-5 rounded-lg border border-[#f0c9c4] bg-[#fff4f2] px-4 py-3 text-[13px] text-[#a33d32]"
-          >
-            {errorMessage}
-          </p>
-        )}
 
         <div className="grid gap-5 lg:grid-cols-[minmax(290px,0.78fr)_minmax(0,2.22fr)]">
           <section className="sensor-card relative overflow-hidden rounded-2xl bg-[#173f35] p-6 text-white shadow-[0_16px_40px_rgba(23,63,53,.16)] sm:p-7 lg:min-h-[430px]">
@@ -429,32 +336,17 @@ export default function App() {
               <div className="my-auto py-12 lg:py-8">
                 <div className="flex items-start">
                   <strong className="sensor-value text-[84px] font-semibold leading-none tracking-[-0.07em] sm:text-[96px]">
-                    {latestReading ? latestReading.value.toFixed(1) : "—"}
+                    3.8
                   </strong>
-                  {latestReading && (
-                    <span className="ml-2 mt-2 text-[30px] font-light text-[#a8c9bd]">
-                      °
-                    </span>
-                  )}
+                  <span className="ml-2 mt-2 text-[30px] font-light text-[#a8c9bd]">
+                    °
+                  </span>
                 </div>
                 <div className="mt-5 flex items-center gap-2 text-[13px]">
-                  {currentChange === null ? (
-                    <span className="text-[#9ebeb2]">
-                      {isLoading
-                        ? "최신 데이터 불러오는 중"
-                        : latestReading
-                          ? "첫 측정값"
-                          : "측정 데이터 없음"}
-                    </span>
-                  ) : (
-                    <>
-                      <span className="rounded-md bg-[#2f6b5a] px-2 py-1 font-semibold text-[#d9eee7]">
-                        {currentChange >= 0 ? "+" : ""}
-                        {currentChange.toFixed(1)}°
-                      </span>
-                      <span className="text-[#9ebeb2]">직전 측정 대비</span>
-                    </>
-                  )}
+                  <span className="rounded-md bg-[#2f6b5a] px-2 py-1 font-semibold text-[#d9eee7]">
+                    +0.2°
+                  </span>
+                  <span className="text-[#9ebeb2]">10분 전 대비</span>
                 </div>
               </div>
 
@@ -464,12 +356,7 @@ export default function App() {
                   <span className="font-medium text-[#d6e7e1]">± 8.0°</span>
                 </div>
                 <div className="h-1.5 overflow-hidden rounded-full bg-black/20">
-                  <div
-                    className="h-full rounded-full bg-[#7fd1b2]"
-                    style={{
-                      width: `${Math.min(100, (Math.abs(latestReading?.value ?? 0) / 8) * 100)}%`,
-                    }}
-                  />
+                  <div className="h-full w-[47.5%] rounded-full bg-[#7fd1b2]" />
                 </div>
               </div>
             </div>
@@ -487,38 +374,47 @@ export default function App() {
                   </h2>
                 </div>
                 <p className="mt-2 text-[13px] text-[#7a857f]">
-                  최근 {readings.length}개 측정값 · 최대 100개
+                  최근 측정값의 시간대별 추이
                 </p>
+              </div>
+              <div className="flex items-center gap-1 rounded-lg bg-[#f1f4f2] p-1">
+                {ranges.map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    onClick={() => setRange(option)}
+                    className={`rounded-md px-3 py-1.5 text-[12px] font-semibold transition focus:outline-none focus:ring-2 focus:ring-[#2b7561]/25 ${
+                      range === option
+                        ? "bg-white text-[#245c4c] shadow-[0_1px_4px_rgba(24,49,40,.1)]"
+                        : "text-[#7b8680] hover:text-[#435149]"
+                    }`}
+                    aria-pressed={range === option}
+                  >
+                    {option}
+                  </button>
+                ))}
               </div>
             </div>
 
-            {readings.length ? (
-              <TrendChart data={readings} label="최근 측정값" />
-            ) : (
-              <div className="flex h-[270px] items-center justify-center text-[13px] text-[#8a948f]">
-                {isLoading
-                  ? "측정값을 불러오는 중입니다."
-                  : "표시할 측정값이 없습니다."}
-              </div>
-            )}
+            <TrendChart data={activeData} range={range} />
 
             <div className="mt-4 grid grid-cols-3 divide-x divide-[#e7ebe8] border-t border-[#edf0ee] pt-5">
               <div className="pr-3">
                 <p className="text-[11px] text-[#8a948f]">평균</p>
                 <p className="mt-1 text-[16px] font-bold text-[#2a3731]">
-                  {stats ? `${stats.average}°` : "—"}
+                  {stats.average}°
                 </p>
               </div>
               <div className="px-4">
                 <p className="text-[11px] text-[#8a948f]">최저</p>
                 <p className="mt-1 text-[16px] font-bold text-[#2a3731]">
-                  {stats ? `${stats.minimum}°` : "—"}
+                  {stats.minimum}°
                 </p>
               </div>
               <div className="pl-4">
                 <p className="text-[11px] text-[#8a948f]">최고</p>
                 <p className="mt-1 text-[16px] font-bold text-[#2a3731]">
-                  {stats ? `${stats.maximum}°` : "—"}
+                  {stats.maximum}°
                 </p>
               </div>
             </div>
@@ -528,25 +424,16 @@ export default function App() {
         <section className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {[
             {
-              label: "Supabase Realtime",
-              value:
-                realtimeStatus === "connected"
-                  ? "연결됨"
-                  : realtimeStatus === "connecting"
-                    ? "연결 중"
-                    : "연결 끊김",
-              meta: "readings 테이블 새 행 구독",
-              accent: realtimeStatus === "connected",
+              label: "센서 상태",
+              value: "정상",
+              meta: "오류 없음",
+              accent: true,
             },
+            { label: "측정 주기", value: "10초", meta: "자동 수집" },
             {
-              label: "표시 데이터",
-              value: `${readings.length}개`,
-              meta: "최신 100개 측정값",
-            },
-            {
-              label: "마지막 측정",
-              value: latestReading?.time ?? "—",
-              meta: "readings 테이블 최신 행",
+              label: "마지막 점검",
+              value: "2025. 05. 20",
+              meta: "다음 점검까지 24일",
             },
           ].map((item) => (
             <article
@@ -577,6 +464,11 @@ export default function App() {
             </article>
           ))}
         </section>
+
+        <p className="mt-6 text-center text-[11px] text-[#9aa29e]">
+          현재 화면에는 예시 데이터가 표시되고 있습니다. 센서 연동 후 실시간
+          값으로 대체됩니다.
+        </p>
       </main>
     </div>
   )
