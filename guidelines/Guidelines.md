@@ -26,13 +26,14 @@
 
 제품 이름, 컨셉, 설명은 `src/product.ts`의 `PRODUCT` 객체 한 곳에서만 정의하고 화면은 거기서 읽는다. 비어 있으면 `[제품 이름]` 같은 자리표시를 `--ink-muted`로 보여준다.
 
-| 슬롯 | 위치 |
-| --- | --- |
-| 제품 이름 | `PRODUCT.name` |
-| 제품 컨셉 (한 줄) | `PRODUCT.concept` |
-| 제품 설명 (2~3문장) | `PRODUCT.description` |
-| 메인 컬러 | globals.css의 `--brand`, `--on-brand`. 기본값 블루 |
-| 폰트 | globals.css의 `--font-sans`(메인, 기본값 Pretendard), `--font-display`(서브, 기본값 Rising CHAI). 서브는 제품 이름과 센서값 숫자에만 |
+| 슬롯 | 위치 | 현재 값 |
+| --- | --- | --- |
+| 제품 이름 | `PRODUCT.name` | `FOLDING LIGHT` |
+| 제품 컨셉 (한 줄) | `PRODUCT.concept` | `Illumination through Articulation` |
+| 제품 설명 (2~3문장) | `PRODUCT.description` | `Brightness changes in difference to angle` |
+| 메인 텍스트 컬러 | globals.css의 `--ink` | `#83CEFF` |
+| 메인 컬러 | globals.css의 `--brand`, `--on-brand`. 기본값 블루 | `#2f5bff`, `#ffffff` |
+| 폰트 | globals.css의 `--font-sans`(메인, 기본값 Pretendard), `--font-display`(서브, 기본값 Rising CHAI). 서브는 제품 이름과 센서값 숫자에만 | Pretendard, Rising CHAI |
 
 ## 기능
 
