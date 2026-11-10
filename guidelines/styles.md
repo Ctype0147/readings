@@ -24,7 +24,7 @@
   --font-display: "Rising CHAI", Pretendard, -apple-system, sans-serif;
 
   --surface: #000000;
-  --ink: #eef0f3;
+  --ink: #83CEFF;
   --ink-muted: #9a9ea7;
   --line: #2a2d33;
   --off: #5d6169;
